@@ -17,7 +17,7 @@ FastAPI-based backend for EcoSnap - an expiry-first dinner triage application.
 3. **Configure environment variables in `.env`:**
    - `DATABASE_URL` - PostgreSQL connection string
    - `GEMINI_API_KEY` - AI API key for recipe generation
-   - `BRAIN_API_SECRET` - API security key
+   - `API_SECRET` - API security key
 
 4. **Run locally:**
    ```bash

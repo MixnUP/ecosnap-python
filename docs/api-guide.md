@@ -15,7 +15,7 @@ All endpoints except `/health` require an API Key passed via the `X-API-Key` hea
 | Attribute | Value |
 | :--- | :--- |
 | **Header Name** | `X-API-Key` |
-| **Local Value** | `BRAIN_API_SECRET` from `.env` |
+| **Local Value** | `API_SECRET` from `.env` |
 | **Production Value** | Configured in Render environment variables |
 
 **Example:**
@@ -52,7 +52,7 @@ cp .env.example .env
 
 **Required variables:**
 - `GEMINI_API_KEY` - Google Gemini API key
-- `BRAIN_API_SECRET` - Your API security key
+- `API_SECRET` - Your API security key
 - `DATABASE_URL` - PostgreSQL connection (optional for local AI-only testing)
 
 ### Run the Server
@@ -291,7 +291,7 @@ If using PostgreSQL features:
 
 ## 🛡 Security Notes
 
-*   **API Key:** Never commit `BRAIN_API_SECRET` to version control. Use Render environment variables.
+*   **API Key:** Never commit `API_SECRET` to version control. Use Render environment variables.
 *   **Gemini API Key:** Stored in environment, not exposed to clients.
 *   **Input Validation:** All requests validated via Pydantic models.
 *   **Error Masking:** Internal exceptions logged server-side; generic messages returned to clients.
@@ -329,7 +329,7 @@ Frontend (Next.js/Firebase)
 | Variable | Required | Description |
 | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | Yes | Google Gemini API access |
-| `BRAIN_API_SECRET` | Yes | API authentication key |
+| `API_SECRET` | Yes | API authentication key |
 | `DATABASE_URL` | No | PostgreSQL (if using DB features) |
 | `CORS_ORIGINS` | No | Comma-separated allowed origins |
 | `PYTHON_VERSION` | No | Render uses 3.11.0 |

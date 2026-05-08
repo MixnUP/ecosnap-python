@@ -60,7 +60,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
     """Verify API key for protected endpoints."""
-    if not settings.brain_api_secret or api_key != settings.brain_api_secret:
+    if not settings.api_secret or api_key != settings.api_secret:
         raise HTTPException(status_code=403, detail="Invalid or missing API Key")
     return api_key
 

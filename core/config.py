@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     database_url: str = Field(..., env="DATABASE_URL")
     
     # Security
-    brain_api_secret: str = Field(..., env="BRAIN_API_SECRET")
+    api_secret: str = Field(..., env="API_SECRET")
     
     # AI
     gemini_api_key: str = Field(..., env="GEMINI_API_KEY")
