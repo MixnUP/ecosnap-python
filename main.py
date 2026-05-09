@@ -7,10 +7,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
-from contextlib import asynccontextmanager
 
 from core.config import settings
-from core.database import init_db
 from services.recipe_service import RecipeService
 
 
@@ -26,19 +24,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan handler."""
-    logger.info("Starting up EcoSnap API...")
-    await init_db()
-    yield
-    logger.info("Shutting down EcoSnap API...")
-
 app = FastAPI(
     title="EcoSnap API",
     description="Expiry-first dinner triage API",
-    version="1.0.0",
-    lifespan=lifespan
+    version="1.0.0"
 )
 
 # CORS middleware

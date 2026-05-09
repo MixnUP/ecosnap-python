@@ -5,8 +5,8 @@ from typing import List
 class Settings(BaseSettings):
     """Application settings loaded from environment."""
     
-    # Database
-    database_url: str = Field(..., env="DATABASE_URL")
+    # Firebase
+    firebase_service_account: str = Field(..., env="FIREBASE_SERVICE_ACCOUNT")
     
     # Security
     api_secret: str = Field(..., env="API_SECRET")

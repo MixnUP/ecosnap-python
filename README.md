@@ -15,7 +15,7 @@ FastAPI-based backend for EcoSnap - an expiry-first dinner triage application.
    ```
 
 3. **Configure environment variables in `.env`:**
-   - `DATABASE_URL` - PostgreSQL connection string
+   - `FIREBASE_SERVICE_ACCOUNT` - Base64 encoded Firebase service account JSON
    - `GEMINI_API_KEY` - AI API key for recipe generation
    - `API_SECRET` - API security key
 

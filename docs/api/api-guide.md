@@ -51,9 +51,11 @@ cp .env.example .env
 ```
 
 **Required variables:**
+- `FIREBASE_SERVICE_ACCOUNT` - Base64 encoded Firebase service account JSON
+  - Download from Firebase Console > Project Settings > Service Accounts
+  - Encode: `cat service-account.json | base64 | pbcopy` (Mac) or `cat service-account.json | base64 -w 0` (Linux)
 - `GEMINI_API_KEY` - Google Gemini API key
 - `API_SECRET` - Your API security key
-- `DATABASE_URL` - PostgreSQL connection (optional for local AI-only testing)
 
 ### Run the Server
 
@@ -280,15 +282,6 @@ pytest tests/ -v
 render logs --service ecosnap-api-production
 ```
 
-### Database Setup (Optional)
-If using PostgreSQL features:
-```bash
-# Initialize tables
-# Tables auto-created on startup via init_db()
-```
-
----
-
 ## 🛡 Security Notes
 
 *   **API Key:** Never commit `API_SECRET` to version control. Use Render environment variables.
@@ -330,7 +323,7 @@ Frontend (Next.js/Firebase)
 | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | Yes | Google Gemini API access |
 | `API_SECRET` | Yes | API authentication key |
-| `DATABASE_URL` | No | PostgreSQL (if using DB features) |
+| `FIREBASE_SERVICE_ACCOUNT` | Yes | Firebase Admin SDK credentials |
 | `CORS_ORIGINS` | No | Comma-separated allowed origins |
 | `PYTHON_VERSION` | No | Render uses 3.11.0 |
 
