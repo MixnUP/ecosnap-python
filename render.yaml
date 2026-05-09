@@ -17,8 +17,6 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: CORS_ORIGINS
-        value: "https://ecosnap-staging.vercel.app"
 
   # Production Environment
   - type: web
@@ -38,5 +36,3 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: CORS_ORIGINS
-        value: "https://ecosnap.app"

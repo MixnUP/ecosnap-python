@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Security, Depends, Request
 from fastapi.security.api_key import APIKeyHeader
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -28,15 +27,6 @@ app = FastAPI(
     title="EcoSnap API",
     description="Expiry-first dinner triage API",
     version="1.0.0"
-)
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 # Rate limiting
