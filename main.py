@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Security, Depends, Request
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -29,6 +30,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS - Allow all origins for development (restrict in production via API gateway/proxy)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -52,7 +62,7 @@ async def health_check(request: Request):
 
 
 @app.post("/api/v1/recipes/triage")
-@limiter.limit("20/minute")
+@limiter.limit("5/minute")
 async def triage_dinner(
     request: Request,
     data: TriageRequest,

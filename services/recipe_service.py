@@ -14,7 +14,7 @@ class RecipeService:
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.client = genai.Client(api_key=settings.gemini_api_key)
-        self.model = "gemma-4-31b"
+        self.model = "gemma-4-31b-it"
     
     async def generate_recipe(self, expiring_items: List[dict], dietary_restrictions: List[str] = None) -> Dict[str, Any]:
         """Generate a dinner recipe from expiring ingredients using Gemma 4 31B."""
