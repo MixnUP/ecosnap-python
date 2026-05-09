@@ -289,7 +289,6 @@ render logs --service ecosnap-api-production
 *   **Input Validation:** All requests validated via Pydantic models.
 *   **Error Masking:** Internal exceptions logged server-side; generic messages returned to clients.
 *   **Rate Limiting:** Per-IP limits prevent brute force and abuse.
-*   **CORS:** Configured for specific frontend origins only.
 
 ---
 
@@ -324,7 +323,6 @@ Frontend (Next.js/Firebase)
 | `GEMINI_API_KEY` | Yes | Google Gemini API access |
 | `API_SECRET` | Yes | API authentication key |
 | `FIREBASE_SERVICE_ACCOUNT` | Yes | Firebase Admin SDK credentials |
-| `CORS_ORIGINS` | No | Comma-separated allowed origins |
 | `PYTHON_VERSION` | No | Render uses 3.11.0 |
 
 ---
@@ -338,7 +336,6 @@ Frontend (Next.js/Firebase)
 - [ ] Rate limits understood (20/min for recipes)
 - [ ] Fallback behavior tested (Gemini failure scenario)
 - [ ] Error handling implemented on frontend
-- [ ] CORS origins configured for production domain
 
 ---
 
