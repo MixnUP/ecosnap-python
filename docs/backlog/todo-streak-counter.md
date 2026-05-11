@@ -1,13 +1,5 @@
 # TODO: Streak Counter Implementation
 
-## Status
-**Priority:** Medium  
-**Created:** 2024-XX-XX  
-**Assignee:** TBD  
-**Status:** Not started
-
----
-
 ## Feature Description
 
 Implement a streak counter to track consecutive days with zero food waste. Displayed in the Impact Receipt modal after user marks a recipe as "Cooked".
@@ -69,123 +61,159 @@ function updateStreak(user) {
 
 ---
 
-## Implementation Options
+## Implementation
 
-### Option A: Firebase Cloud Function (Recommended)
+The streak counter runs entirely in the Python/FastAPI backend. An external cron trigger (e.g., Cloudflare Workers, GitHub Actions, etc.) calls the `POST /internal/streak/daily-check` endpoint at midnight UTC to process all users.
 
-**Location:** `functions/index.js` or `functions/src/streak.ts`
+### Service Layer
 
-**Pros:**
-- Native access to Firebase Auth/Firestore
-- Scheduled functions built-in
-- Stays in data layer where user/inventory lives
+**`services/streak_service.py`** (following existing pattern):
+```python
+from datetime import date, datetime
+from typing import Dict, Any
+import logging
 
-**Code sketch:**
-```javascript
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
+from core.firebase_client import get_firebase_db
 
-exports.dailyStreakCheck = functions.pubsub
-  .schedule('0 0 * * *')  // Every midnight
-  .timeZone('America/New_York')
-  .onRun(async (context) => {
-    const db = admin.firestore();
-    const today = new Date().toISOString().split('T')[0];
+logger = logging.getLogger(__name__)
+
+class StreakService:
+    """Service for managing user streak counters."""
     
-    // Get all users
-    const usersSnapshot = await db.collection('users').get();
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.db = get_firebase_db()
     
-    const batch = db.batch();
+    async def process_daily_streaks(self) -> Dict[str, Any]:
+        """
+        Daily cron job: Check all users for expired items and update streaks.
+        Called at midnight UTC by external trigger.
+        """
+        today = date.today().isoformat()
+        users_ref = self.db.collection("users")
+        users = users_ref.stream()
+        
+        updated_count = 0
+        
+        for user_doc in users:
+            user_data = user_doc.to_dict()
+            user_id = user_doc.id
+            
+            # Check for expired items today
+            expired_items = (
+                self.db.collection("inventory_items")
+                .where("user_id", "==", user_id)
+                .where("estimated_expiry", "<=", today)
+                .where("is_consumed", "==", False)
+                .stream()
+            )
+            
+            had_waste = any(True for _ in expired_items)
+            was_active = user_data.get("app_opened_today", False)
+            
+            current_streak = user_data.get("streak", 0)
+            
+            if not had_waste and was_active:
+                new_streak = current_streak + 1
+            elif had_waste:
+                new_streak = 0
+            else:
+                new_streak = current_streak  # No change if inactive
+            
+            longest_streak = max(new_streak, user_data.get("longest_streak", 0))
+            
+            # Update user document
+            user_doc.reference.update({
+                "streak": new_streak,
+                "longest_streak": longest_streak,
+                "last_streak_check": today,
+                "app_opened_today": False,  # Reset for tomorrow
+                "updated_at": datetime.utcnow()
+            })
+            
+            updated_count += 1
+            self.logger.debug(f"Updated user {user_id}: streak={new_streak}")
+        
+        self.logger.info(f"Processed {updated_count} users for streak update")
+        return {
+            "processed": updated_count,
+            "date": today,
+            "status": "success"
+        }
     
-    for (const userDoc of usersSnapshot.docs) {
-      const user = userDoc.data();
-      
-      // Check for expired items today
-      const expiredItems = await db
-        .collection('inventory_items')
-        .where('user_id', '==', userDoc.id)
-        .where('estimated_expiry', '<=', today)
-        .where('is_consumed', '==', false)
-        .get();
-      
-      const hadWaste = !expiredItems.empty;
-      const wasActive = user.app_opened_today || false;
-      
-      let newStreak = user.streak || 0;
-      
-      if (!hadWaste && wasActive) {
-        newStreak += 1;
-      } else if (hadWaste) {
-        newStreak = 0;
-      }
-      // If !wasActive, streak unchanged
-      
-      batch.update(userDoc.ref, {
-        streak: newStreak,
-        longest_streak: Math.max(newStreak, user.longest_streak || 0),
-        last_streak_check: today,
-        app_opened_today: false  // Reset for tomorrow
-      });
-    }
-    
-    await batch.commit();
-    console.log(`Processed ${usersSnapshot.size} users for streak update`);
-  });
-
-// Track app opens
-exports.trackAppOpen = functions.https.onCall(async (data, context) => {
-  if (!context.auth) return;
-  
-  const today = new Date().toISOString().split('T')[0];
-  const userRef = admin.firestore().doc(`users/${context.auth.uid}`);
-  
-  await userRef.update({
-    app_opened_today: true,
-    last_app_open: new Date()
-  });
-});
+    async def track_app_open(self, user_id: str) -> Dict[str, str]:
+        """Mark user as active for today when they open the app."""
+        self.db.collection("users").document(user_id).update({
+            "app_opened_today": True,
+            "last_app_open": datetime.utcnow()
+        })
+        self.logger.info(f"Tracked app open for user {user_id}")
+        return {"status": "tracked"}
 ```
 
----
+### API Endpoints
 
-### Option B: FastAPI Backend + External Cron
+Add to **`main.py`**:
 
-**File:** `api/streak.py`
+```python
+from services.streak_service import StreakService
 
-**Pros:**
-- All backend logic in one place
+# Add to existing verify_api_key for cron endpoints
+cron_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-**Cons:**
-- Requires external cron service (Render cron jobs don't exist)
-- More complex to access Firebase data
-- Need to set up separate scheduler (e.g., GitHub Actions, external cron)
+async def verify_cron_api_key(api_key: str = Security(cron_api_key_header)):
+    """Verify API key for internal cron endpoints."""
+    if not settings.api_secret or api_key != settings.api_secret:
+        raise HTTPException(status_code=403, detail="Invalid or missing API Key")
+    return api_key
 
-**Not recommended** for this feature.
+# Daily streak check endpoint (called by external cron)
+@app.post("/internal/streak/daily-check")
+@limiter.limit("1/minute")  # Strict rate limit for cron
+async def daily_streak_check(
+    request: Request,
+    api_key: str = Depends(verify_cron_api_key)
+):
+    """Daily cron endpoint. Triggered by external scheduler at midnight UTC."""
+    try:
+        streak_service = StreakService()
+        result = await streak_service.process_daily_streaks()
+        return result
+    except Exception as e:
+        logger.error(f"Daily streak check failed: {e}")
+        raise HTTPException(status_code=500, detail="Streak processing failed")
 
----
-
-## Decision
-
-**Selected:** Option A (Firebase Cloud Function)
-
-**Rationale:**
-- Streak logic tightly coupled to Firebase data (users, inventory_items)
-- Firebase provides native scheduling
-- Keeps FastAPI backend focused on AI recipe generation only
+# Track app open (called by frontend)
+@app.post("/internal/streak/track-open")
+@limiter.limit("10/minute")
+async def track_app_open(
+    request: Request,
+    user_id: str,  # Or use auth dependency if you have user auth
+    api_key: str = Depends(verify_api_key)
+):
+    """Call when user opens app to mark them active for today."""
+    try:
+        streak_service = StreakService()
+        result = await streak_service.track_app_open(user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Track app open failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to track app open")
+```
 
 ---
 
 ## Implementation Checklist
 
-- [ ] Set up Firebase Cloud Functions project
-- [ ] Install dependencies: `firebase-functions`, `firebase-admin`
-- [ ] Write `dailyStreakCheck` scheduled function
-- [ ] Write `trackAppOpen` callable function
-- [ ] Add `streak`, `longest_streak`, `last_streak_check`, `app_opened_today` to User model
-- [ ] Deploy function: `firebase deploy --only functions`
-- [ ] Test with mock data
-- [ ] Add to Impact Receipt UI component
-- [ ] Add streak celebration animation (optional)
+- [ ] Create `services/streak_service.py` with `StreakService` class
+- [ ] Add streak endpoints to `main.py` using existing `verify_api_key` pattern
+- [ ] Add streak fields to Firebase User documents: `streak`, `longest_streak`, `last_streak_check`, `app_opened_today`
+- [ ] Reuse existing `settings.api_secret` for cron endpoint authentication (no new env var needed)
+- [ ] Test `StreakService.process_daily_streaks()` locally
+- [ ] Deploy FastAPI app
+- [ ] Set up external cron trigger to call `POST /internal/streak/daily-check` with `X-API-Key` header daily at midnight UTC
+- [ ] Call `POST /internal/streak/track-open` from frontend when app opens
+- [ ] Add streak display to Impact Receipt UI component
 
 ---
 
@@ -220,4 +248,4 @@ exports.trackAppOpen = functions.https.onCall(async (data, context) => {
 ---
 
 *Last updated: 2024-XX-XX*  
-*Next review: When Firebase Functions are set up*
+*Next review: When StreakService is implemented*
