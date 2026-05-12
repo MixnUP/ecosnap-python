@@ -22,6 +22,7 @@ class ExpiringItem(BaseModel):
 class TriageRequest(BaseModel):
     expiring_items: List[ExpiringItem]
     dietary_restrictions: Optional[List[str]] = None
+    user_id: Optional[str] = None  # Phase 2: Add user_id for personalization
 
 # Configure logging
 logging.basicConfig(
@@ -81,7 +82,7 @@ async def triage_dinner(
             return {"success": True, "recipe": None, "message": "No items provided"}
         
         recipe_service = RecipeService()
-        recipe = await recipe_service.generate_recipe(data.expiring_items, data.dietary_restrictions)
+        recipe = await recipe_service.generate_recipe(data.expiring_items, data.dietary_restrictions, data.user_id)
         return {"success": True, "recipe": recipe}
     except Exception as e:
         logger.error(f"Recipe generation failed: {e}")
