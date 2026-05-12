@@ -36,11 +36,13 @@ Ensure Python 3.11+ and virtual environment:
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
+or: venv\Scripts\activate  # Windows
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (use pre-compiled wheels to avoid build issues)
+pip install --only-binary=all -r requirements.txt
 ```
+
+**Note:** If you encounter build errors with packages like `aiohttp` or `pydantic-core`, use the `--only-binary=all` flag to force installation of pre-compiled wheels instead of building from source.
 
 ### Environment Configuration
 
@@ -336,6 +338,35 @@ Frontend (Next.js/Firebase)
 - [ ] Rate limits understood (20/min for recipes)
 - [ ] Fallback behavior tested (Gemini failure scenario)
 - [ ] Error handling implemented on frontend
+
+---
+
+## 🔧 Troubleshooting Build Issues
+
+### Missing Microsoft Visual C++ Build Tools
+
+If you encounter build errors like:
+```
+error: Microsoft Visual C++ 14.0 or greater is required
+error: linker `link.exe` not found
+```
+
+This happens when pip tries to build packages from source instead of using pre-compiled wheels.
+
+**Solution 1: Use Pre-compiled Wheels**
+```bash
+pip install --only-binary=all <package-name>
+```
+
+**Solution 2: Install Microsoft C++ Build Tools**
+If no wheels are available, install the build tools from:
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+**Example:**
+```bash
+# This worked for aiohttp and pydantic-core
+pip install --only-binary=all aiohttp pydantic-core
+```
 
 ---
 
