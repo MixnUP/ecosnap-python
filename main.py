@@ -12,8 +12,15 @@ from core.config import settings
 from services.recipe_service import RecipeService
 
 
+class ExpiringItem(BaseModel):
+    name: str
+    quantity: Optional[float] = 1.0
+    unit: Optional[str] = "item"
+    category: Optional[str] = None
+    hours_until_expiry: Optional[int] = 999
+
 class TriageRequest(BaseModel):
-    expiring_items: List[dict]
+    expiring_items: List[ExpiringItem]
     dietary_restrictions: Optional[List[str]] = None
 
 # Configure logging
